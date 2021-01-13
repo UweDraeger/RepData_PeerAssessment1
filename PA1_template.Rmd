@@ -18,19 +18,55 @@ The repository is forked from [GitHub](http://github.com/rdpeng/RepData_PeerAsse
 
 ## Loading and preprocessing the data
 
-```{r, echo = TRUE}
+```{r, echo = FALSE, results= "hide"}
+
 library(tidyverse)
 library(lubridate)
+
+```
+
+```{r, echo = TRUE}
 
 unzip(zipfile = "activity.zip")
 activity <- read.csv2("activity.csv", sep = ",", na.strings = "NA")
 activity <- activity %>% mutate(date = ymd(as.character(date)))
-```
 
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r, echo = TRUE}
 
+# create tibble with total number of steps per day
+totalsteps <- activity %>% 
+        group_by(date) %>% 
+        summarise(total = sum(steps))
+```
+
+
+
+```{r, echo = TRUE}
+
+# calculate summary statistics
+summary(totalsteps$total)
+
+```
+
+In the observation period, the monitored person took approximately 10,766 steps per day on average. The median number of steps taken is almost identical with 10,765. The daily number of steps taken varied widely, with a minimum of 41 and a maximum of 21,194 steps.
+
+The distribution of steps is shown in here.
+
+```{r, echo = TRUE}
+
+# plot a histogram of total number of steps taken each day
+ggplot(totalsteps,aes(total)) +
+        geom_bar(na.rm = TRUE) + 
+        scale_x_binned() + 
+        labs(x = "Daily steps", y = "Number of days", 
+             title = "Distribution of total steps taken per day",
+             subtitle = "totaled over 2 months, 8 days without data")
+
+```
 
 ## What is the average daily activity pattern?
 
