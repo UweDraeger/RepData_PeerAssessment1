@@ -18,10 +18,52 @@ The repository is forked from [GitHub](http://github.com/rdpeng/RepData_PeerAsse
 
 ## Loading and preprocessing the data
 
-```{r, echo = TRUE}
-library(tidyverse)
-library(lubridate)
 
+```r
+library(tidyverse)
+```
+
+```
+## -- Attaching packages --------------------------------------- tidyverse 1.3.0 --
+```
+
+```
+## v ggplot2 3.3.2     v purrr   0.3.4
+## v tibble  3.0.4     v dplyr   1.0.2
+## v tidyr   1.1.2     v stringr 1.4.0
+## v readr   1.4.0     v forcats 0.5.0
+```
+
+```
+## Warning: package 'tibble' was built under R version 4.0.3
+```
+
+```
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+```
+
+```r
+library(lubridate)
+```
+
+```
+## Warning: package 'lubridate' was built under R version 4.0.3
+```
+
+```
+## 
+## Attaching package: 'lubridate'
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     date, intersect, setdiff, union
+```
+
+```r
 unzip(zipfile = "activity.zip")
 activity <- read.csv2("activity.csv", sep = ",", na.strings = "NA")
 activity <- activity %>% mutate(date = ymd(as.character(date)))
