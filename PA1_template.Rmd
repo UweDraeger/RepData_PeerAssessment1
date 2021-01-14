@@ -33,8 +33,6 @@ activity <- activity %>% mutate(date = ymd(as.character(date)))
 
 ```
 
-## What is mean total number of steps taken per day?
-
 ```{r, echo = TRUE}
 
 # create tibble with total number of steps per day
@@ -44,17 +42,24 @@ totalsteps <- activity %>%
 ```
 
 
+## What is mean total number of steps taken per day?
+
+At first, we take a look at the activities.
+
+Over the 2 month observation period, a total number of 570,608 steps were recorded. 
+
+The daily activity was not spread evenly across the period. The daily average was slightly above 10,766 steps. The median number of steps taken was almost identical with 10,765. However, the daily number of steps taken varied widely, with a minimum of only 41 and a maximum of 21,194 steps.
 
 ```{r, echo = TRUE}
 
 # calculate summary statistics
+sum(totalsteps$total, na.rm = TRUE)
 summary(totalsteps$total)
 
 ```
 
-In the observation period, the monitored person took approximately 10,766 steps per day on average. The median number of steps taken is almost identical with 10,765. The daily number of steps taken varied widely, with a minimum of 41 and a maximum of 21,194 steps.
 
-The distribution of steps is shown in here.
+The below chart shows the distribution of daily activity.
 
 ```{r, echo = TRUE}
 
@@ -68,8 +73,43 @@ ggplot(totalsteps,aes(total)) +
 
 ```
 
+
 ## What is the average daily activity pattern?
 
+In a next step we take a look at the activity pattern over the course of an average day.
+As can be seen, the activities start shortly after 5:00am, peak around 8:30am, start to calm down around 7:00pm, only to get close to zero around 10:00 pm.
+
+```{r, echo = TRUE}
+
+# create tibble with mean number of steps per interval
+intraday <- activity %>%
+  group_by(interval) %>%
+  summarise(intra = mean(steps, na.rm = TRUE))
+
+# find most active period
+maxsteps <- intraday %>%
+        filter(intra == max(intra))
+maxsteps$interval
+
+# plot a histogram of total number of steps taken each day
+ggplot(intraday,aes(x = interval, y = intra)) +
+        geom_line(na.rm = TRUE) + 
+        labs(x = "Time (HHMM)", y = "Steps taken in interval", 
+             title = "Average activity patter overe a day",
+             subtitle = "averaged over 2 months, 5 minute intervals")
+
+```
+
+The most active interval is `r maxsteps$interval`.
+
+```{r, echo = TRUE}
+
+# find most active period
+maxsteps <- intraday %>%
+        filter(intra == max(intra))
+maxsteps$interval
+
+```
 
 
 ## Imputing missing values
