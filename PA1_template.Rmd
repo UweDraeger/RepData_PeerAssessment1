@@ -52,8 +52,8 @@ totalsteps <- activity %>%
         group_by(date) %>% 
         summarise(total = sum(steps, na.rm = TRUE))
 
-totalsum <-  sum(totalsteps$total, na.rm = TRUE)
-totalmean <-  mean(totalsteps$total, na.rm = TRUE)
+totalsum <- sum(totalsteps$total, na.rm = TRUE)
+totalmean <- mean(totalsteps$total, na.rm = TRUE)
 totalmedian <- median(totalsteps$total, na.rm = TRUE)
 totalmin <- min(totalsteps$total, na.rm = FALSE)
 totalmax <- max(totalsteps$total, na.rm = TRUE)
@@ -97,8 +97,8 @@ As can be seen, the activities start shortly after 5:00am, peak around 8:30am, s
 
 # create tibble with mean number of steps per interval
 intraday <- activity %>%
-  group_by(interval) %>%
-  summarise(intra = mean(steps, na.rm = TRUE))
+        group_by(interval) %>%
+        summarise(intra = mean(steps, na.rm = TRUE))
 
 # plot a histogram of total number of steps taken each day
 ggplot(intraday,aes(x = interval, y = intra)) +
@@ -113,8 +113,8 @@ ggplot(intraday,aes(x = interval, y = intra)) +
 
 # find most active period
 maxsteps <- intraday %>%
-  filter(intra == max(intra)) %>%
-  mutate(stunde = interval %/% 100, minute = interval %% 100)
+        filter(intra == max(intra)) %>%
+        mutate(stunde = interval %/% 100, minute = interval %% 100)
 
 ```
 The most active 5-minute-interval starts `r maxsteps$stunde` : `r maxsteps$minute`.
@@ -130,11 +130,11 @@ totalnum <- sum(is.na(activity$steps))
 
 # create tibble to analyze missing values
 miss <- activity %>%
-  filter(is.na(steps)) 
+        filter(is.na(steps)) 
 
 miss_days <- miss %>%
-  group_by(date) %>% 
-  count(date) 
+        group_by(date) %>% 
+        count(date) 
 # 8 days with 288 intervals each = 2304 observations are completely missing.
 
 ```
@@ -177,3 +177,13 @@ median number of steps with imputed data is `r imputedmedian`.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r weekday}
+
+imputed <- imputed %>%
+    mutate(weekday = if_else(
+      wday(date,week_start = getOption("lubridate.week.start", 1)) > 5, 
+      "weekend", 
+      "weekday"))
+
+```
