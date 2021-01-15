@@ -12,8 +12,10 @@ Introduction
 
 
 ```{r setoptions, echo = FALSE}
+
 library(knitr)
 opts_chunk$set(echo = TRUE, results = "asis")
+options(scipen=999, digits = 2)
 
 ```
 
@@ -50,10 +52,11 @@ totalsteps <- activity %>%
         group_by(date) %>% 
         summarise(total = sum(steps, na.rm = TRUE))
 
-# create tibble with mean number of steps per interval
-intraday <- activity %>%
-  group_by(interval) %>%
-  summarise(intra = mean(steps, na.rm = TRUE))
+totalsum <-  sum(totalsteps$total, na.rm = TRUE)
+totalmean <-  mean(totalsteps$total, na.rm = TRUE)
+totalmedian <- median(totalsteps$total, na.rm = TRUE)
+totalmin <- min(totalsteps$total, na.rm = FALSE)
+totalmax <- max(totalsteps$total, na.rm = TRUE)
 
 ```
 
@@ -62,20 +65,11 @@ intraday <- activity %>%
 
 At first, we take a look at the activities.
 
-Over the 2 month observation period, a total number of 570,608 steps were recorded. 
+Over the 2 month observation period, a total number of `r totalsum` steps were recorded. 
 
-The daily activity was not spread evenly across the period. The daily average was slightly above 10,766 steps. The median number of steps taken was almost identical with 10,765. However, the daily number of steps taken varied widely, with a minimum of only 41 and a maximum of 21,194 steps.
+The daily activity was not spread evenly across the period. The daily average was `r totalmean` steps. The median number of steps taken was `r totalmedian`. However, the daily number of steps taken varied widely, with a minimum of `r totalmin` and a maximum of `r totalmax` steps.
 
-```{r daily_summary}
-
-# calculate summary statistics
-sum(totalsteps$total, na.rm = TRUE)
-summary(totalsteps$total)
-
-```
-
-
-The below chart shows the distribution of daily activity.
+The below chart shows the distribution of daily activity. 
 
 ```{r histo_total}
 
@@ -87,7 +81,11 @@ ggplot(totalsteps,aes(total)) +
              title = "Distribution of total steps taken per day",
              subtitle = "totaled over 2 months, 8 days without data")
 
+# Raw data NAs show up in the first bin, as set to 0.
+# Would have been better to remove them from the sample before creating the plot. However, the instructions stated these could be ignored.
+
 ```
+
 
 
 ## What is the average daily activity pattern?
@@ -97,6 +95,11 @@ As can be seen, the activities start shortly after 5:00am, peak around 8:30am, s
 
 ```{r histo_mean}
 
+# create tibble with mean number of steps per interval
+intraday <- activity %>%
+  group_by(interval) %>%
+  summarise(intra = mean(steps, na.rm = TRUE))
+
 # plot a histogram of total number of steps taken each day
 ggplot(intraday,aes(x = interval, y = intra)) +
         geom_line(na.rm = TRUE) + 
@@ -104,19 +107,17 @@ ggplot(intraday,aes(x = interval, y = intra)) +
              title = "Average activity patter overe a day",
              subtitle = "averaged over 2 months, 5 minute intervals")
 
-
-
-
 ```
 
 ```{r max_steps}
 
 # find most active period
 maxsteps <- intraday %>%
-        filter(intra == max(intra))
+  filter(intra == max(intra)) %>%
+  mutate(stunde = interval %/% 100, minute = interval %% 100)
 
 ```
-The most active 5-minute-interval starts `r maxsteps$interval`.
+The most active 5-minute-interval starts `r maxsteps$stunde` : `r maxsteps$minute`.
 
 
 ## Imputing missing values
@@ -138,10 +139,10 @@ miss_days <- miss %>%
 
 ```
 
-There are in total `r totalnum` intervals with missing observations which are limited to 
-eight days with no measurement whatsoever. 
+There are in total `r totalnum` intervals with missing observations. Those missing values fall  on only eight days. None of these days has any measurement whatsoever.
+
 It might be required to impute missing values.
-Given observed intraday activity pattern it seems prudent to replace missing values with the mean for that 5-minute interval.
+Given observed intraday activity pattern it seems prudent to replace missing values with the mean for respective 5-minute intervals.
 
 ```{r impute}
 
@@ -150,6 +151,29 @@ imputed <- activity %>%
         group_by(interval) %>%
         mutate(steps = replace(steps, is.na(steps), mean(steps, na.rm = TRUE)))
 
+# From here on missing values initially set to 0 have been replaced 
+# create tibble with total number of steps per day
+totalimputed <- imputed %>% 
+        group_by(date) %>% 
+        summarise(total = sum(steps))
+
+imputedmean <- mean(totalimputed$total) 
+imputedmedian <-  median(totalimputed$total) 
+
+
+# plot a histogram of total number of steps taken each day
+ggplot(totalimputed,aes(total)) +
+        geom_bar() + 
+        scale_x_binned() + 
+        labs(x = "Daily steps", y = "Number of days", 
+             title = "Distribution of total steps taken per day",
+             subtitle = "totaled over 2 months, missing values imputed")
 ```
+
+As one would expect, replacing missing values with the mean of the non-missing values moves observations to center of the distribution. This may lead to different results. 
+
+The new mean number of steps with imputed data is `r imputedmean`. The new 
+median number of steps with imputed data is `r imputedmedian`. 
+
 
 ## Are there differences in activity patterns between weekdays and weekends?
