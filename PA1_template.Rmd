@@ -21,6 +21,7 @@ options(scipen=999, digits = 2)
 
 ```{r libraries, echo = FALSE}
 
+R.version.string
 library(tidyverse)
 library(lubridate)
 
@@ -77,9 +78,9 @@ The below chart shows the distribution of daily activity.
 ggplot(totalsteps,aes(total)) +
         geom_bar(na.rm = TRUE) + 
         scale_x_binned() + 
-        labs(x = "Daily steps", y = "Number of days", 
-             title = "Distribution of total steps taken per day",
-             subtitle = "totaled over 2 months, 8 days without data")
+        labs(x = "Daily number of steps", y = "Count of days", 
+             title = "Distribution of total steps taken per day (n = 61 days)",
+             subtitle = "Missing data set to 0 (n = 8 days)")
 
 # Raw data NAs show up in the first bin, as set to 0.
 # Would have been better to remove them from the sample before creating the plot. However, the instructions stated these could be ignored.
@@ -93,7 +94,7 @@ ggplot(totalsteps,aes(total)) +
 In a next step we take a look at the activity pattern over the course of an average day.
 As can be seen, the activities start shortly after 5:00am, peak around 8:30am, start to calm down around 7:00pm, only to get close to zero around 10:00 pm.
 
-```{r histo_mean}
+```{r ts_intraday}
 
 # create tibble with mean number of steps per interval
 intraday <- activity %>%
@@ -103,9 +104,9 @@ intraday <- activity %>%
 # plot a histogram of total number of steps taken each day
 ggplot(intraday,aes(x = interval, y = intra)) +
         geom_line(na.rm = TRUE) + 
-        labs(x = "Time (HHMM)", y = "Steps taken in interval", 
-             title = "Average activity patter overe a day",
-             subtitle = "averaged over 2 months, 5 minute intervals")
+        labs(x = "Time (hhmm)", y = "Number of steps", 
+             title = "Intraday activity pattern",
+             subtitle = "interval length: 5 minutes")
 
 ```
 
@@ -139,10 +140,10 @@ miss_days <- miss %>%
 
 ```
 
-There are in total `r totalnum` intervals with missing observations. Those missing values fall  on only eight days. None of these days has any measurement whatsoever.
+There are in total `r totalnum` intervals with missing observations. For eight days all values are missing. No missing data is recorded for intervals on other days.
 
 It might be required to impute missing values.
-Given observed intraday activity pattern it seems prudent to replace missing values with the mean for respective 5-minute intervals.
+Given observed intraday activity pattern it seems prudent to replace missing values with the mean activity of the corresponding 5-minute intervals.
 
 ```{r impute}
 
@@ -160,6 +161,9 @@ totalimputed <- imputed %>%
 imputedmean <- mean(totalimputed$total) 
 imputedmedian <-  median(totalimputed$total) 
 
+```
+
+```{r histo_imputed}
 
 # plot a histogram of total number of steps taken each day
 ggplot(totalimputed,aes(total)) +
@@ -168,22 +172,42 @@ ggplot(totalimputed,aes(total)) +
         labs(x = "Daily steps", y = "Number of days", 
              title = "Distribution of total steps taken per day",
              subtitle = "totaled over 2 months, missing values imputed")
+
 ```
 
-As one would expect, replacing missing values with the mean of the non-missing values moves observations to center of the distribution. This may lead to different results. 
-
+As one would expect, replacing missing values with the mean of the non-missing values moves observations to center of the distribution. Replacing missing values with mean of non-missing values leads to different results. It is worth keeping this in mind when drawing conclusions from the data. 
 The new mean number of steps with imputed data is `r imputedmean`. The new 
 median number of steps with imputed data is `r imputedmedian`. 
+The identity of mean and median is another consequence of our data manipulation.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
+The activity pattern is different between weekdays (Mon - Fri) and weekends (Sat, Sun).
+The peak of activities in the morning that dominates the pattern on weekdays can not be observed on weekends. Generally, the activities are more evenly spread on the weekends.   
+
 ```{r weekday}
 
 imputed <- imputed %>%
-    mutate(weekday = if_else(
-      wday(date,week_start = getOption("lubridate.week.start", 1)) > 5, 
-      "weekend", 
-      "weekday"))
+        mutate(weekday = if_else(
+                wday(date,week_start = getOption("lubridate.week.start", 1)) > 5, 
+                "weekend", 
+                "weekday"))
 
 ```
+
+```{r ts_weekday}
+
+imputedintraday <- imputed %>%
+        group_by(interval, weekday) %>%
+        summarise(intra = mean(steps, na.rm = TRUE))
+
+ggplot(imputedintraday, aes(x = interval, y = intra )) +
+        geom_line() + 
+        facet_grid((rows = vars(weekday))) +
+        labs(x = "Time (hhmm)", y = "Number of steps", 
+             title = "Intraday activity pattern",
+             subtitle = "interval length: 5 minutes")
+
+```
+
