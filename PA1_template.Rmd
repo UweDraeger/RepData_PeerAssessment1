@@ -4,11 +4,10 @@ output:
   html_document: 
     keep_md: yes
 ---
-
-Introduction
-
+## Uwe Draeger
 
 
+## Introduction
 
 
 ```{r setoptions, echo = FALSE}
@@ -21,7 +20,6 @@ options(scipen=999, digits = 2)
 
 ```{r libraries, echo = FALSE}
 
-R.version.string
 library(tidyverse)
 library(lubridate)
 
@@ -36,6 +34,7 @@ This assignment makes use of data from a personal activity monitoring device. Th
 The raw data was provided as part of the course work. 
 The repository is forked from [GitHub](http://github.com/rdpeng/RepData_PeerAssessment1).
 
+
 ## Loading and preprocessing the data
 
 ```{r load_data}
@@ -46,7 +45,21 @@ activity <- activity %>% mutate(date = ymd(as.character(date)))
 
 ```
 
-```{r preprocess}
+```{r exploration}
+
+str(activity) #17568 observations
+
+numdays <- unique(activity$date) # 61 days
+numintervals <- unique(activity$interval) # 288 intervals 
+
+# 288 intervals x 61 days = 17568 observations
+
+summary(activity)
+# 2304 NA
+
+```
+
+```{r preprocess_NA_equal_zero}
 
 # create tibble with total number of steps per day
 totalsteps <- activity %>% 
@@ -56,8 +69,24 @@ totalsteps <- activity %>%
 totalsum <- sum(totalsteps$total, na.rm = TRUE)
 totalmean <- mean(totalsteps$total, na.rm = TRUE)
 totalmedian <- median(totalsteps$total, na.rm = TRUE)
-totalmin <- min(totalsteps$total, na.rm = FALSE)
+totalmin <- min(totalsteps$total, na.rm = TRUE)
 totalmax <- max(totalsteps$total, na.rm = TRUE)
+
+```
+
+```{r preprocess_NA_removed}
+
+# create tibble with total number of steps per day
+omittedsteps <- activity %>% 
+        filter(!is.na(steps)) %>%
+        group_by(date) %>% 
+        summarise(total = sum(steps))
+
+omittedsum <- sum(omittedsteps$total)
+omittedmean <- mean(omittedsteps$total)
+omittedmedian <- median(omittedsteps$total)
+omittedmin <- min(omittedsteps$total)
+omittedmax <- max(omittedsteps$total)
 
 ```
 
@@ -66,11 +95,26 @@ totalmax <- max(totalsteps$total, na.rm = TRUE)
 
 At first, we take a look at the activities.
 
-Over the 2 month observation period, a total number of `r totalsum` steps were recorded. 
+Over the observation period, only 53 out of 61 days had data.
+A total number of `r totalsum` steps were recorded. 
 
-The daily activity was not spread evenly across the period. The daily average was `r totalmean` steps. The median number of steps taken was `r totalmedian`. However, the daily number of steps taken varied widely, with a minimum of `r totalmin` and a maximum of `r totalmax` steps.
+The daily activity was not spread evenly across the period. The daily average was `r omittedmean` (or `r totalmean` for 61 days) steps. The median number of steps taken was `r omittedmedian` (`r totalmedian` for 61 days). However, the daily number of steps taken varied widely, with a minimum of `r omittedmin` and a maximum of `r totalmax` steps.
 
 The below chart shows the distribution of daily activity. 
+
+```{r histo_total_omitted}
+
+# plot a histogram of total number of steps taken each day
+ggplot(omittedsteps,aes(total)) +
+        geom_bar() + 
+        scale_x_binned() + 
+        labs(x = "Daily steps", y = "Number of days", 
+             title = "Distribution of total steps taken per day (n = 53 days)",
+             subtitle = "Missing data removed (n = 8 days)")
+
+```
+
+The same chart with 61 days, i.e. missing observations are set to 0.
 
 ```{r histo_total}
 
@@ -86,7 +130,6 @@ ggplot(totalsteps,aes(total)) +
 # Would have been better to remove them from the sample before creating the plot. However, the instructions stated these could be ignored.
 
 ```
-
 
 
 ## What is the average daily activity pattern?
@@ -123,7 +166,7 @@ The most active 5-minute-interval starts `r maxsteps$stunde` : `r maxsteps$minut
 
 ## Imputing missing values
 
-In a next step we consider missing values and their potential effects  on the results achieved so far. 
+In a next step we consider another treatment of missing values and their potential effects on the results. Missing values will be replaced by the mean activity in each interval.
 
 ```{r missing}
 
@@ -142,8 +185,6 @@ miss_days <- miss %>%
 
 There are in total `r totalnum` intervals with missing observations. For eight days all values are missing. No missing data is recorded for intervals on other days.
 
-It might be required to impute missing values.
-Given observed intraday activity pattern it seems prudent to replace missing values with the mean activity of the corresponding 5-minute intervals.
 
 ```{r impute}
 
@@ -175,10 +216,9 @@ ggplot(totalimputed,aes(total)) +
 
 ```
 
-As one would expect, replacing missing values with the mean of the non-missing values moves observations to center of the distribution. Replacing missing values with mean of non-missing values leads to different results. It is worth keeping this in mind when drawing conclusions from the data. 
-The new mean number of steps with imputed data is `r imputedmean`. The new 
-median number of steps with imputed data is `r imputedmedian`. 
-The identity of mean and median is another consequence of our data manipulation.
+As one would expect, replacing missing values with the mean of the non-missing values moves observations to center of the distribution. Replacing missing values with mean of non-missing values leads to different results compared to both setting them to 0 or to remove them from the sample. It is worth keeping this in mind when drawing conclusions from the data. 
+
+The mean number of steps when missing data has been "corrected" this way is `r imputedmean`, equal to the result achieved by removing them from the sample. The new median number of steps with imputed data, however is changed to `r imputedmedian`. The identity of the median with the mean is a consequence of our data manipulation.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -208,6 +248,13 @@ ggplot(imputedintraday, aes(x = interval, y = intra )) +
         labs(x = "Time (hhmm)", y = "Number of steps", 
              title = "Intraday activity pattern",
              subtitle = "interval length: 5 minutes")
+
+```
+
+
+```{r session info}
+
+sessionInfo()
 
 ```
 
